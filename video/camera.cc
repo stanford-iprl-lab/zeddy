@@ -17,7 +17,8 @@ static constexpr int capture_type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 Camera::Camera( const uint16_t width,
                 const uint16_t height,
                 const string& device_name,
-                const uint32_t pixel_format )
+                const uint32_t pixel_format,
+                const unsigned int frame_rate )
   : width_( width )
   , height_( height )
   , pixel_format_( pixel_format )
@@ -59,11 +60,11 @@ Camera::Camera( const uint16_t width,
     throw runtime_error( "can't set frame rate" );
   }
   params.parm.capture.timeperframe.numerator = 1;
-  params.parm.capture.timeperframe.denominator = FRAME_RATE;
+  params.parm.capture.timeperframe.denominator = frame_rate;
   CheckSystemCall( "setting capture params", ioctl( camera_fd_.fd_num(), VIDIOC_S_PARM, &params ) );
   if ( params.parm.capture.timeperframe.numerator != 1
-       or params.parm.capture.timeperframe.denominator != FRAME_RATE ) {
-    throw runtime_error( "can't set frame rate to FRAME_RATE fps" );
+       or params.parm.capture.timeperframe.denominator != frame_rate ) {
+    throw runtime_error( "can't set frame rate to " + to_string( frame_rate ) + " fps" );
   }
 
   init();
@@ -101,8 +102,6 @@ void Camera::init()
   }
 
   CheckSystemCall( "stream on", ioctl( camera_fd_.fd_num(), VIDIOC_STREAMON, &capture_type ) );
-
-  frame_count_ = 0;
 }
 
 Camera::~Camera()
@@ -110,111 +109,35 @@ Camera::~Camera()
   CheckSystemCall( "stream off", ioctl( camera_fd_.fd_num(), VIDIOC_STREAMOFF, &capture_type ) );
 }
 
-void Camera::get_next_frame( RasterYUV422& raster )
+const MMap_Region& Camera::borrow_next_frame()
 {
-  if ( raster.width() != width_ or raster.height() != height_ ) {
-    throw runtime_error( "Camera::get_next_frame: mismatched raster size" );
-  }
-
   v4l2_buffer buffer_info;
   buffer_info.type = capture_type;
   buffer_info.memory = V4L2_MEMORY_MMAP;
   buffer_info.index = next_buffer_index;
   buffer_info.bytesused = 0;
-  // auto start = chrono::high_resolution_clock::now();
+
   CheckSystemCall( "dequeue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_DQBUF, &buffer_info ) );
   camera_fd_.buffer_dequeued();
 
-  if ( buffer_info.bytesused > 0 and not( buffer_info.flags & V4L2_BUF_FLAG_ERROR ) ) {
-    [[maybe_unused]] const MMap_Region& mmap_region = kernel_v4l2_buffers_.at( next_buffer_index );
-
-    switch ( pixel_format_ ) {
-      case V4L2_PIX_FMT_YUYV:
-        throw runtime_error( "unsupported YUYV" );
-        break;
-
-      case V4L2_PIX_FMT_MJPEG:
-        throw runtime_error( "unsupported MJPEG" );
-        break;
-    }
-
-    frame_count_++;
+  if ( buffer_info.bytesused == 0 ) {
+    throw runtime_error( "invalid frame: no bytes used" );
   }
 
-  CheckSystemCall( "enqueue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_QBUF, &buffer_info ) );
+  if ( buffer_info.flags & V4L2_BUF_FLAG_ERROR ) {
+    throw runtime_error( "frame error signalled" );
+  }
 
-  next_buffer_index = ( next_buffer_index + 1 ) % NUM_BUFFERS;
+  return kernel_v4l2_buffers_.at( next_buffer_index );
 }
 
-void Camera::get_next_frame( RasterYUV420& raster )
+void Camera::release_frame()
 {
-  if ( raster.width() != width_ or raster.height() != height_ ) {
-    throw runtime_error( "Camera::get_next_frame: mismatched raster size" );
-  }
-
   v4l2_buffer buffer_info;
   buffer_info.type = capture_type;
   buffer_info.memory = V4L2_MEMORY_MMAP;
   buffer_info.index = next_buffer_index;
   buffer_info.bytesused = 0;
-
-  CheckSystemCall( "dequeue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_DQBUF, &buffer_info ) );
-  camera_fd_.buffer_dequeued();
-
-  if ( buffer_info.bytesused > 0 and not( buffer_info.flags & V4L2_BUF_FLAG_ERROR ) ) {
-    const MMap_Region& mmap_region = kernel_v4l2_buffers_.at( next_buffer_index );
-
-    switch ( pixel_format_ ) {
-      case V4L2_PIX_FMT_YUYV: {
-        char* src = mmap_region.addr();
-        uint8_t* dst_y_start = raster.Y_row( 0 );
-        uint8_t* dst_cb_start = raster.Cb_row( 0 );
-        uint8_t* dst_cr_start = raster.Cr_row( 0 );
-
-        const size_t y_plane_length = width_ * height_;
-
-        for ( size_t i = 0; i < y_plane_length; i++ ) {
-          dst_y_start[i] = src[i << 1];
-        }
-
-        size_t i = 0;
-
-        for ( size_t row = 0; row < height_; row++ ) {
-          if ( row % 2 == 1 ) {
-            continue;
-          }
-
-          for ( size_t column = 0; column < width_ / 2; column++ ) {
-            dst_cb_start[i] = src[row * width_ * 2 + column * 4 + 1];
-            dst_cr_start[i] = src[row * width_ * 2 + column * 4 + 3];
-            i++;
-          }
-        }
-
-      } break;
-
-      case V4L2_PIX_FMT_NV12: {
-        memcpy( raster.Y_row( 0 ), mmap_region.addr(), width_ * height_ );
-
-        uint8_t* src_chroma_start = reinterpret_cast<uint8_t*>( mmap_region.addr() ) + width_ * height_;
-        uint8_t* dst_cb_start = raster.Cb_row( 0 );
-        uint8_t* dst_cr_start = raster.Cr_row( 0 );
-
-        size_t chroma_length = width_ * height_ / 4;
-
-        for ( size_t i = 0; i < chroma_length; i++ ) {
-          dst_cb_start[i] = src_chroma_start[2 * i];
-          dst_cr_start[i] = src_chroma_start[2 * i + 1];
-        }
-      } break;
-
-      case V4L2_PIX_FMT_MJPEG:
-        throw runtime_error( "invalid" );
-        break;
-    }
-
-    frame_count_++;
-  }
 
   CheckSystemCall( "enqueue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_QBUF, &buffer_info ) );
 

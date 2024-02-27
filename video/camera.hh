@@ -28,11 +28,9 @@
 
 #include "file_descriptor.hh"
 #include "mmap.hh"
-#include "raster.hh"
 
 #include <linux/videodev2.h>
 #include <optional>
-#include <unordered_map>
 
 class CameraFD : public FileDescriptor
 {
@@ -45,8 +43,7 @@ public:
 class Camera
 {
 private:
-  static constexpr unsigned int NUM_BUFFERS = 4;
-  static constexpr unsigned int FRAME_RATE = 60;
+  static constexpr unsigned int NUM_BUFFERS = 16;
 
   uint16_t width_;
   uint16_t height_;
@@ -59,18 +56,17 @@ private:
 
   void init();
 
-  unsigned int frame_count_ {};
-
 public:
   Camera( const uint16_t width,
           const uint16_t height,
           const std::string& device_name,
-          const uint32_t pixel_format = V4L2_PIX_FMT_MJPEG );
+          const uint32_t pixel_format,
+          const unsigned int frame_rate );
 
   ~Camera();
 
-  void get_next_frame( RasterYUV422& raster );
-  void get_next_frame( RasterYUV420& raster );
+  const MMap_Region& borrow_next_frame();
+  void release_frame();
 
   FileDescriptor& fd() { return camera_fd_; }
 };
