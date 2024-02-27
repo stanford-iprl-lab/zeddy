@@ -106,7 +106,12 @@ void Camera::init()
 
 Camera::~Camera()
 {
-  CheckSystemCall( "stream off", ioctl( camera_fd_.fd_num(), VIDIOC_STREAMOFF, &capture_type ) );
+  try {
+    CheckSystemCall( "stream off", ioctl( camera_fd_.fd_num(), VIDIOC_STREAMOFF, &capture_type ) );
+  } catch ( const exception& e ) {
+    cerr << "Camera destructor failed on exception of type " << demangle( typeid( e ).name() ) << ": " << e.what()
+         << "\n";
+  }
 }
 
 const MMap_Region& Camera::borrow_next_frame()
