@@ -88,7 +88,7 @@ void Camera::init()
 
   /* allocate buffers */
   for ( unsigned int i = 0; i < NUM_BUFFERS; i++ ) {
-    v4l2_buffer buffer_info;
+    v4l2_buffer buffer_info {};
     buffer_info.type = capture_type;
     buffer_info.memory = V4L2_MEMORY_MMAP;
     buffer_info.index = i;
@@ -116,11 +116,10 @@ Camera::~Camera()
 
 const MMap_Region& Camera::borrow_next_frame()
 {
-  v4l2_buffer buffer_info;
+  v4l2_buffer buffer_info {};
   buffer_info.type = capture_type;
   buffer_info.memory = V4L2_MEMORY_MMAP;
   buffer_info.index = next_buffer_index;
-  buffer_info.bytesused = 0;
 
   CheckSystemCall( "dequeue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_DQBUF, &buffer_info ) );
   camera_fd_.buffer_dequeued();
@@ -138,11 +137,10 @@ const MMap_Region& Camera::borrow_next_frame()
 
 void Camera::release_frame()
 {
-  v4l2_buffer buffer_info;
+  v4l2_buffer buffer_info {};
   buffer_info.type = capture_type;
   buffer_info.memory = V4L2_MEMORY_MMAP;
   buffer_info.index = next_buffer_index;
-  buffer_info.bytesused = 0;
 
   CheckSystemCall( "enqueue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_QBUF, &buffer_info ) );
 
