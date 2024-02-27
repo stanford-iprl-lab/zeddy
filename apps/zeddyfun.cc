@@ -8,7 +8,7 @@ using namespace std;
 
 void camera_demo( [[maybe_unused]] const string& device_name )
 {
-  Camera cam { 2560, 720, device_name };
+  Camera cam { 2560, 720, device_name, V4L2_PIX_FMT_YUYV };
 }
 
 int main( int argc, char* argv[] )
