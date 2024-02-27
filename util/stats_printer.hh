@@ -30,7 +30,10 @@ class StatsPrinterTask
 public:
   StatsPrinterTask( std::shared_ptr<EventLoop> loop );
 
-  unsigned int wait_time_ms() const;
+  unsigned int wait_time_ms() const
+  {
+    return duration_cast<std::chrono::milliseconds>( stats_print_interval ).count();
+  }
 
   template<class T>
   void add( std::shared_ptr<T> obj )
