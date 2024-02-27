@@ -26,8 +26,7 @@ Address::Raw::operator const sockaddr*() const
 
 //! \param[in] addr points to a raw socket address
 //! \param[in] size is `addr`'s length
-Address::Address( const sockaddr* addr, const size_t size )
-  : _size( size )
+Address::Address( const sockaddr* addr, const size_t size ) : _size( size )
 {
   // make sure proposed sockaddr can fit
   if ( size > sizeof( _address.storage ) ) {
@@ -52,8 +51,7 @@ public:
 //! \param[in] node is the hostname or dotted-quad address
 //! \param[in] service is the service name or numeric string
 //! \param[in] hints are criteria for resolving the supplied name
-Address::Address( const string& node, const string& service, const addrinfo& hints )
-  : _size()
+Address::Address( const string& node, const string& service, const addrinfo& hints ) : _size()
 {
   // prepare for the answer
   addrinfo* resolved_address = nullptr;

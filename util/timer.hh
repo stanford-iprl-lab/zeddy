@@ -129,9 +129,7 @@ class RecordScopeTimer
   uint64_t _start_time;
 
 public:
-  RecordScopeTimer( Timer::Record& timer )
-    : _timer( &timer )
-    , _start_time( Timer::timestamp_ns() )
+  RecordScopeTimer( Timer::Record& timer ) : _timer( &timer ), _start_time( Timer::timestamp_ns() )
   {
     global_timer().start<category>( _start_time );
   }
@@ -155,9 +153,7 @@ class MultiTimer
 
 public:
   MultiTimer( Timer::Record& timer1, Timer::Record& timer2 )
-    : _timer1( &timer1 )
-    , _timer2( &timer2 )
-    , _start_time( Timer::timestamp_ns() )
+    : _timer1( &timer1 ), _timer2( &timer2 ), _start_time( Timer::timestamp_ns() )
   {
     global_timer().start<category>( _start_time );
   }

@@ -20,9 +20,7 @@ private:
 
 public:
   RasterRGBA( const uint16_t width, const uint16_t height )
-    : width_( width )
-    , height_( height )
-    , rgba_( width_ * height_ )
+    : width_( width ), height_( height ), rgba_( width_ * height_ )
   {}
 
   uint16_t width() const { return width_; }
@@ -120,15 +118,11 @@ public:
 class RasterYUV422 : public RasterYUV
 {
 public:
-  RasterYUV422( const uint16_t width, const uint16_t height )
-    : RasterYUV( width, height, width / 2, height )
-  {}
+  RasterYUV422( const uint16_t width, const uint16_t height ) : RasterYUV( width, height, width / 2, height ) {}
 };
 
 class RasterYUV420 : public RasterYUV
 {
 public:
-  RasterYUV420( const uint16_t width, const uint16_t height )
-    : RasterYUV( width, height, width / 2, height / 2 )
-  {}
+  RasterYUV420( const uint16_t width, const uint16_t height ) : RasterYUV( width, height, width / 2, height / 2 ) {}
 };

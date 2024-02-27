@@ -17,9 +17,7 @@ protected:
   span_view<T> storage( const size_t index ) const { return { RingStorage::storage( index * elem_size_ ) }; }
 
 public:
-  explicit TypedRingStorage( const size_t capacity )
-    : RingStorage( capacity * elem_size_ )
-  {}
+  explicit TypedRingStorage( const size_t capacity ) : RingStorage( capacity * elem_size_ ) {}
 
   size_t capacity() const { return RingStorage::capacity() / elem_size_; }
 };

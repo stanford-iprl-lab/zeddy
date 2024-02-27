@@ -60,15 +60,11 @@ class TCPSocket : public Socket
 private:
   //! \brief Construct from FileDescriptor (used by accept())
   //! \param[in] fd is the FileDescriptor from which to construct
-  explicit TCPSocket( FileDescriptor&& fd )
-    : Socket( std::move( fd ), AF_INET, SOCK_STREAM )
-  {}
+  explicit TCPSocket( FileDescriptor&& fd ) : Socket( std::move( fd ), AF_INET, SOCK_STREAM ) {}
 
 public:
   //! Default: construct an unbound, unconnected TCP socket
-  TCPSocket()
-    : Socket( AF_INET, SOCK_STREAM )
-  {}
+  TCPSocket() : Socket( AF_INET, SOCK_STREAM ) {}
 
   //! Mark a socket as listening for incoming connections
   void listen( const int backlog = 16 );

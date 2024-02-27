@@ -34,10 +34,7 @@ size_t EventLoop::add_category( const string& name )
 EventLoop::BasicRule::BasicRule( const size_t s_category_id,
                                  const InterestT& s_interest,
                                  const CallbackT& s_callback )
-  : category_id( s_category_id )
-  , interest( s_interest )
-  , callback( s_callback )
-  , cancel_requested( false )
+  : category_id( s_category_id ), interest( s_interest ), callback( s_callback ), cancel_requested( false )
 {}
 
 EventLoop::FDRule::FDRule( BasicRule&& base,
@@ -45,11 +42,7 @@ EventLoop::FDRule::FDRule( BasicRule&& base,
                            const Direction s_direction,
                            const CallbackT& s_cancel,
                            const InterestT& s_recover )
-  : BasicRule( base )
-  , fd( move( s_fd ) )
-  , direction( s_direction )
-  , cancel( s_cancel )
-  , recover( s_recover )
+  : BasicRule( base ), fd( move( s_fd ) ), direction( s_direction ), cancel( s_cancel ), recover( s_recover )
 {}
 
 EventLoop::RuleHandle EventLoop::add_rule( const size_t category_id,
