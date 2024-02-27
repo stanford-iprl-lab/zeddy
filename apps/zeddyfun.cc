@@ -8,7 +8,7 @@ using namespace std;
 
 void camera_demo( [[maybe_unused]] const string& device_name )
 {
-  throw runtime_error { "this is a test" };
+  Camera cam { 2560, 720, device_name };
 }
 
 int main( int argc, char* argv[] )
