@@ -6,9 +6,9 @@
 #include <unistd.h>
 
 #include "eventloop.hh"
-#include "exception.hh"
 #include "file_descriptor.hh"
 #include "ring_buffer.hh"
+#include "summarize.hh"
 
 class StatsPrinterTask
 {
@@ -20,10 +20,10 @@ class StatsPrinterTask
 
   using time_point = decltype( std::chrono::steady_clock::now() );
 
-  time_point next_stats_print, next_stats_reset;
+  time_point bootup_time;
+  time_point next_stats_print;
 
-  static constexpr auto stats_print_interval = std::chrono::milliseconds( 5000 );
-  static constexpr auto stats_reset_interval = std::chrono::seconds( 10 );
+  static constexpr auto stats_print_interval = std::chrono::milliseconds( 500 );
 
   std::ostringstream ss_ {};
 

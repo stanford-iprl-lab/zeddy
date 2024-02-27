@@ -9,8 +9,7 @@
 
 using namespace std;
 
-EventLoop::EventLoop()
-  : _rule_categories()
+EventLoop::EventLoop() : _rule_categories()
 {
   _rule_categories.reserve( 64 );
   // prevent _rule_categories from being reallocated in middle of wait_next_event
@@ -265,11 +264,13 @@ void EventLoop::summary( ostream& out ) const
 
     out << "   " << name << ": ";
     out << string( 27 - min( 27U, name_len ), ' ' );
-    out << "mean " << timer.total_ticks / timer.count;
+    out << "mean ";
+    Timer::pp_ns( out, timer.total_ns / timer.count );
 
-    out << "  [" << timer.min_ticks;
+    out << "  [";
+    Timer::pp_ns( out, timer.min_ns );
     out << "..";
-    out << timer.max_ticks;
+    Timer::pp_ns( out, timer.max_ns );
     out << "]";
 
     out << " N=" << timer.count;

@@ -1,6 +1,5 @@
 #include "stats_printer.hh"
-
-#include <cxxabi.h>
+#include "exception.hh"
 
 using namespace std;
 using namespace std::chrono;
@@ -8,8 +7,8 @@ using namespace std::chrono;
 StatsPrinterTask::StatsPrinterTask( std::shared_ptr<EventLoop> loop )
   : loop_( loop )
   , standard_output_( CheckSystemCall( "dup STDERR_FILENO", dup( STDERR_FILENO ) ) )
-  , next_stats_print( steady_clock::now() )
-  , next_stats_reset( steady_clock::now() )
+  , bootup_time( steady_clock::now() )
+  , next_stats_print( bootup_time + stats_print_interval )
 {
   loop_->add_rule(
     "generate+print statistics",
@@ -17,10 +16,17 @@ StatsPrinterTask::StatsPrinterTask( std::shared_ptr<EventLoop> loop )
       ss_.str( {} );
       ss_.clear();
 
+      const auto now = steady_clock::now();
+
+      ss_ << "=============== Runtime Statistics at t = ";
+      ss_ << duration_cast<milliseconds>( now - bootup_time ).count();
+      ss_ << " ms ===============\n\n";
+
       for ( const auto& obj : objects_ ) {
         if ( obj ) {
           obj->summary( ss_ );
           obj->reset_summary();
+          ss_ << "\n";
         }
       }
 
@@ -30,15 +36,10 @@ StatsPrinterTask::StatsPrinterTask( std::shared_ptr<EventLoop> loop )
       ss_ << "\n";
 
       /* calculate new time */
-      const auto now = steady_clock::now();
       next_stats_print = now + stats_print_interval;
 
-      /* reset if necessary */
-      if ( now > next_stats_reset ) {
-        loop_->reset_summary();
-
-        next_stats_reset = now + stats_reset_interval;
-      }
+      /* reset for next time */
+      loop_->reset_summary();
 
       /* print out */
       const auto& str = ss_.str();

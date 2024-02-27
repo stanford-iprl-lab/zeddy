@@ -124,15 +124,6 @@ void Camera::get_next_frame( RasterYUV422& raster )
   // auto start = chrono::high_resolution_clock::now();
   CheckSystemCall( "dequeue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_DQBUF, &buffer_info ) );
   camera_fd_.buffer_dequeued();
-  // auto end = chrono::high_resolution_clock::now();
-  // auto duration = chrono::duration_cast<chrono::milliseconds>( end - start );
-  // cout << "Time taken: " << duration.count() << " ms" << endl;
-
-  // i_++;
-  // if ( i_ == 60 ) {
-  //   cerr << "triggered" << endl;
-  //   CheckSystemCall( "stop clock", system( "kill -TSTP 184170" ) );
-  // }
 
   if ( buffer_info.bytesused > 0 and not( buffer_info.flags & V4L2_BUF_FLAG_ERROR ) ) {
     [[maybe_unused]] const MMap_Region& mmap_region = kernel_v4l2_buffers_.at( next_buffer_index );
@@ -170,12 +161,6 @@ void Camera::get_next_frame( RasterYUV420& raster )
   CheckSystemCall( "dequeue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_DQBUF, &buffer_info ) );
   camera_fd_.buffer_dequeued();
 
-  i_++;
-  if ( i_ == 60 ) {
-    cerr << "triggered" << endl;
-    CheckSystemCall( "stop clock", system( "kill -TSTP 185850" ) );
-  }
-
   if ( buffer_info.bytesused > 0 and not( buffer_info.flags & V4L2_BUF_FLAG_ERROR ) ) {
     const MMap_Region& mmap_region = kernel_v4l2_buffers_.at( next_buffer_index );
 
@@ -211,7 +196,7 @@ void Camera::get_next_frame( RasterYUV420& raster )
       case V4L2_PIX_FMT_NV12: {
         memcpy( raster.Y_row( 0 ), mmap_region.addr(), width_ * height_ );
 
-        uint8_t* src_chroma_start = reinterpret_cast<uint8_t*>(mmap_region.addr()) + width_ * height_;
+        uint8_t* src_chroma_start = reinterpret_cast<uint8_t*>( mmap_region.addr() ) + width_ * height_;
         uint8_t* dst_cb_start = raster.Cb_row( 0 );
         uint8_t* dst_cr_start = raster.Cr_row( 0 );
 

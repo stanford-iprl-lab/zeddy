@@ -1,5 +1,7 @@
 #include "camera.hh"
+#include "eventloop.hh"
 #include "exception.hh"
+#include "stats_printer.hh"
 
 #include <iostream>
 #include <span>
@@ -9,6 +11,15 @@ using namespace std;
 void camera_demo( [[maybe_unused]] const string& device_name )
 {
   Camera cam { 2560, 720, device_name, V4L2_PIX_FMT_YUYV };
+
+  RasterYUV420 raster { 2560, 720 };
+
+  auto loop = make_shared<EventLoop>();
+  StatsPrinterTask stats { loop };
+
+  loop->add_rule( "get frame", cam.fd(), Direction::In, [&] { cam.get_next_frame( raster ); } );
+
+  while ( loop->wait_next_event( stats.wait_time_ms() ) != EventLoop::Result::Exit ) {}
 }
 
 int main( int argc, char* argv[] )
