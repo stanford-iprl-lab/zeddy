@@ -28,6 +28,7 @@
 
 #include "file_descriptor.hh"
 #include "mmap.hh"
+#include "summarize.hh"
 
 #include <linux/videodev2.h>
 #include <optional>
@@ -40,7 +41,7 @@ public:
   void buffer_dequeued() { register_read(); }
 };
 
-class Camera
+class Camera : public Summarizable
 {
 private:
   static constexpr unsigned int NUM_BUFFERS = 16;
@@ -56,6 +57,9 @@ private:
 
   void init();
 
+  unsigned int frames_dequeued_ {};
+  unsigned int successful_frames_dequeued_ {};
+
 public:
   Camera( const uint16_t width,
           const uint16_t height,
@@ -65,8 +69,11 @@ public:
 
   ~Camera();
 
-  const MMap_Region& borrow_next_frame();
+  std::string_view borrow_next_frame();
   void release_frame();
 
   FileDescriptor& fd() { return camera_fd_; }
+
+  void summary( std::ostream& out ) const override;
+  void reset_summary() override {};
 };

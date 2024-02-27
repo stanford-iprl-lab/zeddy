@@ -10,14 +10,14 @@ using namespace std;
 
 void camera_demo( [[maybe_unused]] const string& device_name )
 {
-  Camera cam { 2560, 720, device_name, V4L2_PIX_FMT_YUYV, 30 };
-
+  auto cam = make_shared<Camera>( 2560, 720, device_name, V4L2_PIX_FMT_YUYV, 30 );
   auto loop = make_shared<EventLoop>();
   StatsPrinterTask stats { loop };
+  stats.add( cam );
 
-  loop->add_rule( "get frame", cam.fd(), Direction::In, [&] {
-    [[maybe_unused]] auto& the_frame_ref = cam.borrow_next_frame();
-    cam.release_frame();
+  loop->add_rule( "get frame", cam->fd(), Direction::In, [&] {
+    [[maybe_unused]] auto the_frame_view = cam->borrow_next_frame();
+    cam->release_frame();
   } );
 
   while ( loop->wait_next_event( stats.wait_time_ms() ) != EventLoop::Result::Exit ) {}

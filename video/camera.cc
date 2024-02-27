@@ -114,7 +114,7 @@ Camera::~Camera()
   }
 }
 
-const MMap_Region& Camera::borrow_next_frame()
+string_view Camera::borrow_next_frame()
 {
   v4l2_buffer buffer_info {};
   buffer_info.type = capture_type;
@@ -123,14 +123,13 @@ const MMap_Region& Camera::borrow_next_frame()
 
   CheckSystemCall( "dequeue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_DQBUF, &buffer_info ) );
   camera_fd_.buffer_dequeued();
+  frames_dequeued_++;
 
-  if ( buffer_info.bytesused == 0 ) {
-    throw runtime_error( "invalid frame: no bytes used" );
+  if ( buffer_info.flags & V4L2_BUF_FLAG_ERROR or not buffer_info.bytesused ) {
+    return {};
   }
 
-  if ( buffer_info.flags & V4L2_BUF_FLAG_ERROR ) {
-    throw runtime_error( "frame error signalled" );
-  }
+  successful_frames_dequeued_++;
 
   return kernel_v4l2_buffers_.at( next_buffer_index );
 }
@@ -145,4 +144,13 @@ void Camera::release_frame()
   CheckSystemCall( "enqueue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_QBUF, &buffer_info ) );
 
   next_buffer_index = ( next_buffer_index + 1 ) % NUM_BUFFERS;
+}
+
+void Camera::summary( ostream& out ) const
+{
+  out << "Camera summary (" << width_ << "x" << height_ << " on " << device_name_ << ")"
+      << "\n------------------------\n\n";
+
+  out << "Frame successes/attempts: " << successful_frames_dequeued_ << "/" << frames_dequeued_ << "\n";
+  out << "Frame failures: " << frames_dequeued_ - successful_frames_dequeued_ << "\n";
 }
