@@ -42,7 +42,8 @@ H264Encoder::H264Encoder( const uint16_t width,
 string_view H264Encoder::encode422( string_view raster )
 {
   if ( width_ * height_ * 2 != raster.size() ) {
-    throw runtime_error( "H264Encoder::encode422(): size mismatch" );
+    throw runtime_error( "H264Encoder::encode422(): size mismatch. Expected " + to_string( width_ * height_ * 2 )
+                         + " but got " + to_string( raster.size() ) );
   }
 
   pic_in_.img.i_csp = X264_CSP_YUYV;
@@ -55,6 +56,10 @@ string_view H264Encoder::encode422( string_view raster )
   x264_nal_t* nal;
 
   const auto frame_size = x264_encoder_encode( encoder_.get(), &nal, &nals_count, &pic_in_, &pic_out_ );
+
+  if ( frame_size < 0 ) {
+    throw runtime_error( "x264_encoder_encode returned error" );
+  }
 
   if ( not nal or frame_size <= 0 ) {
     return {};

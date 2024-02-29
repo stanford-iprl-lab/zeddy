@@ -1,6 +1,7 @@
 #include "camera.hh"
 #include "eventloop.hh"
 #include "exception.hh"
+#include "h264_encoder.hh"
 #include "stats_printer.hh"
 
 #include <iostream>
@@ -8,15 +9,23 @@
 
 using namespace std;
 
+static constexpr unsigned int width = 2560;
+static constexpr unsigned int height = 720;
+static constexpr unsigned int fps = 30;
+
 void camera_demo( [[maybe_unused]] const string& device_name )
 {
-  auto cam = make_shared<Camera>( 2560, 720, device_name, V4L2_PIX_FMT_YUYV, 30 );
+  auto cam = make_shared<Camera>( width, height, device_name, V4L2_PIX_FMT_YUYV, fps );
   auto loop = make_shared<EventLoop>();
   StatsPrinterTask stats { loop };
   stats.add( cam );
+  H264Encoder enc { width, height, fps, "veryfast", "zerolatency" };
 
-  loop->add_rule( "get frame", cam->fd(), Direction::In, [&] {
-    [[maybe_unused]] auto the_frame_view = cam->borrow_next_frame();
+  loop->add_rule( "get and encode frame", cam->fd(), Direction::In, [&] {
+    auto the_frame_view = cam->borrow_next_frame();
+    if ( not the_frame_view.empty() ) {
+      enc.encode422( the_frame_view );
+    }
     cam->release_frame();
   } );
 
