@@ -2,6 +2,7 @@
 #include "eventloop.hh"
 #include "exception.hh"
 #include "h264_encoder.hh"
+#include "scale.hh"
 #include "stats_printer.hh"
 
 #include <iostream>
@@ -19,12 +20,15 @@ void camera_demo( [[maybe_unused]] const string& device_name )
   auto loop = make_shared<EventLoop>();
   StatsPrinterTask stats { loop };
   stats.add( cam );
+  ColorspaceConverter converter { width, height };
   H264Encoder enc { width, height, fps, "veryfast", "zerolatency" };
+  vector<uint8_t> frame420( 3 * width * height / 2, 0 );
 
   loop->add_rule( "get and encode frame", cam->fd(), Direction::In, [&] {
     auto the_frame_view = cam->borrow_next_frame();
     if ( not the_frame_view.empty() ) {
-      enc.encode422( the_frame_view );
+      converter.convert( the_frame_view, frame420 );
+      enc.encode420( frame420 );
     }
     cam->release_frame();
   } );

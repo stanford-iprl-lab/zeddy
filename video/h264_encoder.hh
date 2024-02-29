@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <string>
 
 #include <x264.h>
@@ -28,5 +29,5 @@ public:
                const std::string& preset,
                const std::string& tune );
 
-  std::string_view encode422( std::string_view raster );
+  std::string_view encode420( std::span<uint8_t> raster );
 };

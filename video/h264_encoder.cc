@@ -2,6 +2,7 @@
 #include "exception.hh"
 
 #include <iostream>
+#include <x264.h>
 
 using namespace std;
 
@@ -12,6 +13,10 @@ H264Encoder::H264Encoder( const uint16_t width,
                           const string& tune )
   : width_( width ), height_( height ), fps_( fps )
 {
+  if ( width_ % 2 or height_ % 2 ) {
+    throw runtime_error( "H.264 encoder requires even width and height for 4:2:0" );
+  }
+
   // Set params for encoder
   x264_param_t params {};
 
@@ -42,18 +47,23 @@ H264Encoder::H264Encoder( const uint16_t width,
   x264_picture_init( &pic_out_ );
 }
 
-string_view H264Encoder::encode422( string_view raster )
+string_view H264Encoder::encode420( span<uint8_t> raster )
 {
-  if ( width_ * height_ * 2 != raster.size() ) {
-    throw runtime_error( "H264Encoder::encode422(): size mismatch. Expected " + to_string( width_ * height_ * 2 )
-                         + " but got " + to_string( raster.size() ) );
+  if ( 3 * width_ * height_ / 2 != raster.size() ) {
+    throw runtime_error( "H264Encoder::encode420(): size mismatch. Expected "
+                         + to_string( 3 * width_ * height_ / 2 ) + " but got " + to_string( raster.size() ) );
   }
 
-  pic_in_.img.i_csp = X264_CSP_YUYV;
-  pic_in_.img.i_plane = 1;
-  pic_in_.img.i_stride[0] = width_ * 2;
+  pic_in_.img.i_csp = X264_CSP_I420;
+  pic_in_.img.i_plane = 3;
 
-  pic_in_.img.plane[0] = reinterpret_cast<uint8_t*>( const_cast<char*>( raster.data() ) ); // XXX
+  pic_in_.img.i_stride[0] = width_;
+  pic_in_.img.i_stride[1] = width_ / 2;
+  pic_in_.img.i_stride[2] = width_ / 2;
+
+  pic_in_.img.plane[0] = raster.data();
+  pic_in_.img.plane[1] = raster.data() + width_ * height_;
+  pic_in_.img.plane[2] = raster.data() + width_ * height_ + ( width_ / 2 ) * ( height_ / 2 );
 
   int nals_count = 0;
   x264_nal_t* nal;

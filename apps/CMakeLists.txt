@@ -4,6 +4,8 @@ macro(add_app exec_name)
   target_link_libraries("${exec_name}" util)
   target_link_libraries("${exec_name}" ${X264_LDFLAGS})
   target_link_libraries("${exec_name}" ${X264_LDFLAGS_OTHER})
+  target_link_libraries("${exec_name}" ${swscale_LDFLAGS})
+  target_link_libraries("${exec_name}" ${swscale_LDFLAGS_OTHER})
 endmacro(add_app)
 
 add_app(zeddyfun)

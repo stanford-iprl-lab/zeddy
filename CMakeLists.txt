@@ -11,6 +11,10 @@ pkg_check_modules(X264 REQUIRED x264)
 include_directories(${X264_INCLUDE_DIRS})
 add_compile_options(${X264_CFLAGS_OTHER})
 
+pkg_check_modules(swscale REQUIRED libswscale)
+include_directories(${swscale_INCLUDE_DIRS})
+add_compile_options(${swscale_CFLAGS})
+
 include_directories("${PROJECT_SOURCE_DIR}/util")
 include_directories("${PROJECT_SOURCE_DIR}/video")
 
