@@ -24,14 +24,24 @@ void camera_demo( [[maybe_unused]] const string& device_name )
   H264Encoder enc { width, height, fps, "veryfast", "zerolatency" };
   vector<uint8_t> frame420( 3 * width * height / 2, 0 );
 
-  loop->add_rule( "get and encode frame", cam->fd(), Direction::In, [&] {
+  bool need_to_encode = false;
+
+  loop->add_rule( "get and convert frame", cam->fd(), Direction::In, [&] {
     auto the_frame_view = cam->borrow_next_frame();
     if ( not the_frame_view.empty() ) {
       converter.convert( the_frame_view, frame420 );
-      enc.encode420( frame420 );
+      need_to_encode = true;
     }
     cam->release_frame();
   } );
+
+  loop->add_rule(
+    "encode frame",
+    [&] {
+      enc.encode420( frame420 );
+      need_to_encode = false;
+    },
+    [&] { return need_to_encode; } );
 
   while ( loop->wait_next_event( stats.wait_time_ms() ) != EventLoop::Result::Exit ) {}
 }
