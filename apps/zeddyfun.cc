@@ -14,7 +14,7 @@ static constexpr unsigned int width = 2560;
 static constexpr unsigned int height = 720;
 static constexpr unsigned int fps = 30;
 
-void camera_demo( [[maybe_unused]] const string& device_name )
+void camera_demo( const string& device_name )
 {
   auto cam = make_shared<Camera>( width, height, device_name, V4L2_PIX_FMT_YUYV, fps );
   auto loop = make_shared<EventLoop>();
