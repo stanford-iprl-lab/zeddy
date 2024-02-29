@@ -14,7 +14,6 @@ class H264Encoder
   };
 
   std::unique_ptr<x264_t, x264_deleter> encoder_ {};
-  x264_param_t params_ {};
   x264_picture_t pic_in_ {}, pic_out_ {};
   int frame_size_ {};
 

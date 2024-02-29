@@ -12,28 +12,31 @@ H264Encoder::H264Encoder( const uint16_t width,
                           const string& tune )
   : width_( width ), height_( height ), fps_( fps )
 {
-  if ( x264_param_default_preset( &params_, preset.c_str(), tune.c_str() ) != 0 ) {
+  // Set params for encoder
+  x264_param_t params {};
+
+  if ( x264_param_default_preset( &params, preset.c_str(), tune.c_str() ) != 0 ) {
     throw runtime_error( "Error: Failed to set preset on x264." );
   }
-  // Set params for encoder
-  params_.i_threads = 6;
-  params_.i_width = width_;
-  params_.i_height = height_;
-  params_.i_fps_num = fps_;
-  params_.i_fps_den = 1;
-  params_.b_annexb = 1;
-  params_.b_repeat_headers = 1;
-  params_.i_keyint_max = 2 * fps_;
-  //  params_.b_intra_refresh = true;
 
-  params_.rc.i_qp_constant = 30;
-  params_.rc.i_rc_method = X264_RC_CQP;
+  params.i_threads = 6;
+  params.i_width = width_;
+  params.i_height = height_;
+  params.i_fps_num = fps_;
+  params.i_fps_den = 1;
+  params.b_annexb = 1;
+  params.b_repeat_headers = 1;
+  params.i_keyint_max = 2 * fps_;
+  //  params.b_intra_refresh = true;
+
+  params.rc.i_qp_constant = 30;
+  params.rc.i_rc_method = X264_RC_CQP;
 
   // Apply profile
-  if ( x264_param_apply_profile( &params_, "high" ) != 0 ) {
-    throw runtime_error( "Error: Failed to set baseline profile on x264." );
+  if ( x264_param_apply_profile( &params, "high422" ) != 0 ) {
+    throw runtime_error( "Error: Failed to set high422 profile on x264." );
   }
-  encoder_.reset( notnull( "x264_encoder_open", x264_encoder_open( &params_ ) ) );
+  encoder_.reset( notnull( "x264_encoder_open", x264_encoder_open( &params ) ) );
 
   x264_picture_init( &pic_in_ );
   x264_picture_init( &pic_out_ );
