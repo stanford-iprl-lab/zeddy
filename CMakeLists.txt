@@ -5,6 +5,12 @@ project(zeddy CXX)
 include(etc/build_type.cmake)
 include(etc/cflags.cmake)
 
+find_package(PkgConfig)
+
+pkg_check_modules(X264 REQUIRED x264)
+include_directories(${X264_INCLUDE_DIRS})
+add_compile_options(${X264_CFLAGS_OTHER})
+
 include_directories("${PROJECT_SOURCE_DIR}/util")
 include_directories("${PROJECT_SOURCE_DIR}/video")
 
