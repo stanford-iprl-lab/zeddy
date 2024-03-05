@@ -27,7 +27,7 @@ void camera_demo( const string& device_name )
   bool need_to_encode = false;
 
   loop->add_rule( "get and convert frame", cam->fd(), Direction::In, [&] {
-    auto the_frame_view = cam->borrow_next_frame();
+    auto the_frame_view = cam->borrow_most_recent_frame();
     if ( not the_frame_view.empty() ) {
       converter.convert( the_frame_view, frame420 );
       need_to_encode = true;

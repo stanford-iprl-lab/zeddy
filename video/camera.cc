@@ -1,6 +1,7 @@
 #include "camera.hh"
 
 #include <chrono>
+#include <cmath>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -134,6 +135,59 @@ string_view Camera::borrow_next_frame()
   return kernel_v4l2_buffers_.at( next_buffer_index );
 }
 
+string_view Camera::borrow_most_recent_frame()
+{
+  v4l2_buffer buffer_info {};
+  buffer_info.type = capture_type;
+  buffer_info.memory = V4L2_MEMORY_MMAP;
+  buffer_info.index = next_buffer_index;
+
+  // get one buffer (for sure), then *try* to "upgrade" to a more recent one
+  CheckSystemCall( "dequeue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_DQBUF, &buffer_info ) );
+  camera_fd_.buffer_dequeued();
+  frames_dequeued_++;
+
+  if ( buffer_info.flags & V4L2_BUF_FLAG_ERROR or not buffer_info.bytesused ) {
+    return {};
+  }
+
+  successful_frames_dequeued_++;
+
+  // "try" to upgrade to a more recent buffer if available
+  while ( true ) {
+    const unsigned int candidate_new_buffer = ( next_buffer_index + 1 ) % NUM_BUFFERS;
+
+    // get another frame
+    buffer_info.index = candidate_new_buffer;
+    auto ret = ioctl( camera_fd_.fd_num(), VIDIOC_DQBUF, &buffer_info );
+    if ( ret < 0 ) {
+      if ( errno == EAGAIN ) {
+        break;
+      } else {
+        throw unix_error( "dequeue additional buffer", errno );
+      }
+    }
+
+    frames_dequeued_++;
+
+    if ( buffer_info.flags & V4L2_BUF_FLAG_ERROR or not buffer_info.bytesused ) {
+      // bad frame; stick with the one we have. Release this one.
+      CheckSystemCall( "enqueue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_QBUF, &buffer_info ) );
+      break;
+    }
+
+    successful_frames_dequeued_++;
+    frames_skipped_++;
+
+    // there's a new buffer available -- release the one we're holding
+    buffer_info.index = next_buffer_index;
+    CheckSystemCall( "enqueue buffer", ioctl( camera_fd_.fd_num(), VIDIOC_QBUF, &buffer_info ) );
+    next_buffer_index = candidate_new_buffer;
+  }
+
+  return kernel_v4l2_buffers_.at( next_buffer_index );
+}
+
 void Camera::release_frame()
 {
   v4l2_buffer buffer_info {};
@@ -152,5 +206,7 @@ void Camera::summary( ostream& out ) const
       << "\n------------------------\n\n";
 
   out << "Frame successes/attempts: " << successful_frames_dequeued_ << "/" << frames_dequeued_ << "\n";
+  out << "Frames skipped: " << frames_skipped_ << " ("
+      << nearbyint( 1000 * frames_skipped_ / successful_frames_dequeued_ ) / 10.0 << "%)\n";
   out << "Frame failures: " << frames_dequeued_ - successful_frames_dequeued_ << "\n";
 }

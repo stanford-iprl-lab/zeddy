@@ -59,6 +59,7 @@ private:
 
   unsigned int frames_dequeued_ {};
   unsigned int successful_frames_dequeued_ {};
+  unsigned int frames_skipped_ {};
 
 public:
   Camera( const uint16_t width,
@@ -70,6 +71,7 @@ public:
   ~Camera();
 
   std::string_view borrow_next_frame();
+  std::string_view borrow_most_recent_frame();
   void release_frame();
 
   FileDescriptor& fd() { return camera_fd_; }
