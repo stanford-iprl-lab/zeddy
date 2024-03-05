@@ -17,9 +17,13 @@ add_compile_options(${swscale_CFLAGS})
 
 include_directories("${PROJECT_SOURCE_DIR}/util")
 include_directories("${PROJECT_SOURCE_DIR}/video")
+include_directories("${PROJECT_SOURCE_DIR}/crypto")
+include_directories("${PROJECT_SOURCE_DIR}/network")
 
 add_subdirectory("${PROJECT_SOURCE_DIR}/util")
 add_subdirectory("${PROJECT_SOURCE_DIR}/video")
+add_subdirectory("${PROJECT_SOURCE_DIR}/crypto")
+add_subdirectory("${PROJECT_SOURCE_DIR}/network")
 add_subdirectory("${PROJECT_SOURCE_DIR}/apps")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

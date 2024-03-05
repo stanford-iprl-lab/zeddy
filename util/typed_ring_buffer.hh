@@ -2,10 +2,10 @@
 
 #include "exception.hh"
 #include "ring_buffer.hh"
-#include "spans.hh"
 
 #include <algorithm>
 #include <iostream>
+#include <span>
 
 template<typename T>
 class TypedRingStorage : public RingStorage
@@ -13,8 +13,8 @@ class TypedRingStorage : public RingStorage
   static constexpr auto elem_size_ = sizeof( T );
 
 protected:
-  span<T> mutable_storage( const size_t index ) { return { RingStorage::storage( index * elem_size_ ) }; }
-  span_view<T> storage( const size_t index ) const { return { RingStorage::storage( index * elem_size_ ) }; }
+  std::span<T> mutable_storage( const size_t index ) { return { RingStorage::storage( index * elem_size_ ) }; }
+  std::span<const T> storage( const size_t index ) const { return { RingStorage::storage( index * elem_size_ ) }; }
 
 public:
   explicit TypedRingStorage( const size_t capacity ) : RingStorage( capacity * elem_size_ ) {}
@@ -38,12 +38,12 @@ public:
   size_t num_popped() const { return num_popped_; }
   size_t num_stored() const { return num_pushed_ - num_popped_; }
 
-  span<T> writable_region()
+  std::span<T> writable_region()
   {
     return TypedRingStorage<T>::mutable_storage( next_index_to_write() ).substr( 0, capacity() - num_stored() );
   }
 
-  span_view<T> writable_region() const
+  std::span<const T> writable_region() const
   {
     return TypedRingStorage<T>::storage( next_index_to_write() ).substr( 0, capacity() - num_stored() );
   }
@@ -57,7 +57,7 @@ public:
     num_pushed_ += num_elems;
   }
 
-  span_view<T> readable_region() const
+  std::span<const T> readable_region() const
   {
     return TypedRingStorage<T>::storage( next_index_to_read() ).substr( 0, num_stored() );
   }
@@ -95,15 +95,14 @@ class EndlessBuffer : TypedRingStorage<T>
 
   size_t next_index_to_read() const { return num_popped_ % TypedRingStorage<T>::capacity(); }
 
-  span_view<T> readable_region() const { return TypedRingStorage<T>::storage( next_index_to_read() ); }
-  span<T> readable_region() { return TypedRingStorage<T>::mutable_storage( next_index_to_read() ); }
+  std::span<const T> readable_region() const { return TypedRingStorage<T>::storage( next_index_to_read() ); }
 
 public:
   using TypedRingStorage<T>::TypedRingStorage;
 
   void pop( const size_t num_elems )
   {
-    span<T> region_to_erase { readable_region().substr( 0, num_elems ) };
+    std::span<T> region_to_erase { readable_region().substr( 0, num_elems ) };
     std::fill( region_to_erase.begin(), region_to_erase.end(), T {} );
     num_popped_ += num_elems;
   }
@@ -120,13 +119,13 @@ public:
   size_t range_begin() const { return num_popped_; }
   size_t range_end() const { return range_begin() + TypedRingStorage<T>::capacity(); }
 
-  span<T> region( const size_t pos, const size_t count )
+  std::span<T> region( const size_t pos, const size_t count )
   {
     check_bounds( pos, count );
     return readable_region().substr( pos - range_begin(), count );
   }
 
-  span_view<T> region( const size_t pos, const size_t count ) const
+  std::span<const T> region( const size_t pos, const size_t count ) const
   {
     check_bounds( pos, count );
     return readable_region().substr( pos - range_begin(), count );

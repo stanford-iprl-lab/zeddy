@@ -154,3 +154,16 @@ void Socket::throw_if_error() const
     throw unix_error( "socket error", socket_error );
   }
 }
+
+void UDPSocket::sendto( const Address& destination, const string_view payload )
+{
+  CheckSystemCall( "sendto",
+                   ::sendto( fd_num(), payload.data(), payload.length(), 0, destination, destination.size() ) );
+  register_write();
+}
+
+void UDPSocket::send( const string_view payload )
+{
+  CheckSystemCall( "send", ::send( fd_num(), payload.data(), payload.length(), 0 ) );
+  register_write();
+}

@@ -2,9 +2,9 @@
 
 #include <array>
 #include <cstdint>
+#include <span>
 
 #include "parser.hh"
-#include "spans.hh"
 
 template<uint8_t alignment, typename size_type, size_type max_capacity>
 class StackBuffer
@@ -17,7 +17,7 @@ class StackBuffer
   alignas( alignment ) std::array<char, max_capacity> buffer_;
 #pragma GCC diagnostic pop
 
-  string_span mutable_buffer_of_preset_length() { return { mutable_data_ptr(), length() }; }
+  std::span<char> mutable_buffer_of_preset_length() { return { mutable_data_ptr(), length() }; }
 
 public:
   /* allow use of buffer initialized */
@@ -32,7 +32,7 @@ public:
   const uint8_t* unsigned_data_ptr() const { return reinterpret_cast<const uint8_t*>( buffer_.data() ); }
   uint8_t* mutable_unsigned_data_ptr() { return reinterpret_cast<uint8_t*>( buffer_.data() ); }
 
-  string_span mutable_buffer() { return { mutable_data_ptr(), max_capacity }; }
+  std::span<char> mutable_buffer() { return { mutable_data_ptr(), max_capacity }; }
 
   std::string_view as_string_view() const { return { data_ptr(), length_ }; }
   operator std::string_view() const { return as_string_view(); }

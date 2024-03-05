@@ -54,6 +54,24 @@ public:
   void throw_if_error() const;
 };
 
+class UDPSocket : public Socket
+{
+protected:
+  //! \brief Construct from FileDescriptor (used by TCPOverUDPSocketAdapter)
+  //! \param[in] fd is the FileDescriptor from which to construct
+  explicit UDPSocket( FileDescriptor&& fd ) : Socket( std::move( fd ), AF_INET, SOCK_DGRAM ) {}
+
+public:
+  //! Default: construct an unbound, unconnected UDP socket
+  UDPSocket() : Socket( AF_INET, SOCK_DGRAM ) {}
+
+  //! Send a datagram to specified Address
+  void sendto( const Address& destination, const std::string_view payload );
+
+  //! Send datagram to the socket's connected address (must call connect() first)
+  void send( const std::string_view payload );
+};
+
 //! A wrapper around [TCP sockets](\ref man7::tcp)
 class TCPSocket : public Socket
 {

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <iostream>
 #include <span>
 #include <string>
 
@@ -25,9 +26,35 @@ public:
   std::string_view input() const { return input_; }
   bool error() const { return error_; }
   void set_error() { error_ = true; }
+  void clear_error() { error_ = false; }
+
+  ~Parser()
+  {
+    if ( error_ ) {
+      std::cerr << "Error: Parser destroyed without clearing error.\n";
+      abort();
+    }
+  }
 
   template<typename T>
   void integer( T& out )
+  {
+    check_size( sizeof( T ) );
+    if ( error() ) {
+      return;
+    }
+
+    out = static_cast<T>( 0 );
+    for ( size_t i = 0; i < sizeof( T ); i++ ) {
+      out <<= 8;
+      out += uint8_t( input_.at( i ) );
+    }
+
+    input_.remove_prefix( sizeof( T ) );
+  }
+
+  template<typename T>
+  void floating( T& out )
   {
     check_size( sizeof( T ) );
     if ( error() ) {
@@ -77,9 +104,13 @@ public:
   template<typename T>
   void integer( const T& val )
   {
-    check_size( sizeof( T ) );
-    memcpy( output_.data(), &val, sizeof( T ) );
-    output_ = output_.subspan( sizeof( T ) );
+    constexpr size_t len = sizeof( T );
+    check_size( len );
+
+    for ( size_t i = 0; i < len; ++i ) {
+      *output_.data() = ( val >> ( ( len - i - 1 ) * 8 ) ) & 0xff;
+      output_ = output_.subspan( 1 );
+    }
   }
 
   void string( const std::string_view str )
