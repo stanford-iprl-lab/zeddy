@@ -167,3 +167,24 @@ void UDPSocket::send( const string_view payload )
   CheckSystemCall( "send", ::send( fd_num(), payload.data(), payload.length(), 0 ) );
   register_write();
 }
+
+size_t UDPSocket::recv( Address& source_address, span<char> payload )
+{
+  // receive source address and payload
+  Address::Raw datagram_source_address;
+  socklen_t fromlen = sizeof( datagram_source_address );
+
+  const ssize_t recv_len = CheckSystemCall(
+    "recvfrom",
+    ::recvfrom( fd_num(), payload.data(), payload.size(), MSG_TRUNC, datagram_source_address, &fromlen ) );
+
+  register_read();
+  source_address = { datagram_source_address, fromlen };
+
+  if ( recv_len > ssize_t( payload.size() ) ) {
+    throw runtime_error( "recvfrom (oversized datagram)" );
+    return 0;
+  }
+
+  return recv_len;
+}

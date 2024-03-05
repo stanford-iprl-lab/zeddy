@@ -65,6 +65,9 @@ public:
   //! Default: construct an unbound, unconnected UDP socket
   UDPSocket() : Socket( AF_INET, SOCK_DGRAM ) {}
 
+  //! Receive a datagram and the Address of its sender (caller can allocate storage)
+  size_t recv( Address& source_address, std::span<char> payload );
+
   //! Send a datagram to specified Address
   void sendto( const Address& destination, const std::string_view payload );
 
